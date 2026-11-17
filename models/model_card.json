@@ -1,0 +1,24 @@
+{
+  "model": "gradient_boosting",
+  "hyperparameters": {
+    "learning_rate": 0.05,
+    "max_leaf_nodes": 63
+  },
+  "selection_metric": "f1",
+  "cv_scores": {
+    "accuracy": 0.9639378584837643,
+    "precision": 0.9743743176326924,
+    "recall": 0.9415435868961687,
+    "f1": 0.9576763078430552,
+    "roc_auc": 0.9950570340946209
+  },
+  "test_scores": {
+    "accuracy": 0.9640437326763166,
+    "precision": 0.9734105091797052,
+    "recall": 0.9438744190125405,
+    "f1": 0.9584149599287622,
+    "roc_auc": 0.9951754682337578
+  },
+  "trained_on": "103904 passengers",
+  "date": "2026-11-17 20:20"
+}

@@ -1,0 +1,119 @@
+# Central configuration: paths, column groups and feature-engineering settings.
+seed: 42
+
+paths:
+  raw_dir: data/raw
+  train_file: train.csv
+  test_file: test.csv
+  figures_dir: reports/figures
+  results_dir: reports/results
+  model_file: models/best_model.pkl
+  model_card: models/model_card.json
+  new_samples: data/samples/new_passengers.csv
+
+dataset:
+  kaggle_handle: teejmahal20/airline-passenger-satisfaction
+  target: satisfaction
+  positive_label: satisfied
+  # The CSVs start with an unnamed index column; `id` is a passenger identifier with no signal.
+  drop_columns: [unnamed_0, id]
+
+features:
+  categorical: [gender, customer_type, type_of_travel, class]
+  numeric: [age, flight_distance, departure_delay_in_minutes, arrival_delay_in_minutes]
+  ratings:
+    - inflight_wifi_service
+    - departure_arrival_time_convenient
+    - ease_of_online_booking
+    - gate_location
+    - food_and_drink
+    - online_boarding
+    - seat_comfort
+    - inflight_entertainment
+    - on_board_service
+    - leg_room_service
+    - baggage_handling
+    - checkin_service
+    - inflight_service
+    - cleanliness
+
+feature_engineering:
+  # A rating of 0 means "not applicable" (service not used), not "very bad".
+  # Flags are kept only where the zeros are frequent enough to carry information.
+  not_applicable_flags:
+    - inflight_wifi_service
+    - departure_arrival_time_convenient
+    - ease_of_online_booking
+    - online_boarding
+    - leg_room_service
+    - food_and_drink
+  # Groups found by hierarchical clustering of the rating correlations (see notebook, section 5).
+  # online_boarding is the strongest single predictor and stays on its own.
+  # rating_representation: "raw" feeds the 14 ratings to the model, "grouped" feeds
+  # online_boarding plus the three group scores (fewer, less correlated features).
+  rating_representation: raw
+  rating_groups:
+    digital_convenience: [inflight_wifi_service, departure_arrival_time_convenient, ease_of_online_booking, gate_location]
+    comfort: [food_and_drink, seat_comfort, inflight_entertainment, cleanliness]
+    staff_service: [on_board_service, leg_room_service, baggage_handling, checkin_service, inflight_service]
+  # Satisfaction is not monotonic in age, so age is also bucketed.
+  age_bins: [0, 17, 25, 39, 59, 120]
+  # Quoted: YAML would otherwise read 18_25 as the integer 1825.
+  age_labels: ["under_18", "18_25", "26_39", "40_59", "60_plus"]
+  # Industry convention: a flight is late when it arrives 15 minutes or more after schedule.
+  delay_threshold_minutes: 15
+  # Each step can be switched off; the ablation study (notebook 02) measures what each one adds.
+  steps:
+    not_applicable: true    # flag the 0 ratings and replace them by the training median
+    log_transform: true     # log(1 + x) of flight distance and arrival delay
+    delay_flag: true        # is_delayed = arrival delay >= threshold
+    age_groups: true        # age buckets in addition to raw age
+    travel_class: true      # type of travel x class instead of the two separate columns
+
+training:
+  cv_folds: 5
+  # The best setting of each model is chosen on this cross-validation metric.
+  refit_metric: f1
+  metrics: [accuracy, precision, recall, f1, roc_auc]
+  n_jobs: -1
+  # KNN compares each passenger with every training passenger, which makes a full grid search
+  # very slow: the grid is searched on a stratified sample, then the chosen setting is
+  # cross-validated and refit on the whole training set like the other models.
+  knn_search_sample: 20000
+
+# Models of the course (KNN, logistic regression, LDA/QDA, trees and ensembles).
+# `params` are fixed, `grid` is the hyperparameter search space.
+models:
+  logistic_regression:
+    params: {max_iter: 2000}
+    grid:
+      C: [0.01, 0.1, 1, 10, 100]
+  knn:
+    params: {}
+    grid:
+      n_neighbors: [5, 11, 21, 41]
+      weights: [uniform, distance]
+  lda:
+    params: {solver: lsqr}
+    grid:
+      shrinkage: [null, auto]
+  qda:
+    params: {}
+    grid:
+      reg_param: [0.0, 0.01, 0.1, 0.5]
+  decision_tree:
+    params: {}
+    grid:
+      max_depth: [4, 8, 12, 16]
+      min_samples_leaf: [1, 20, 100]
+  random_forest:
+    params: {n_estimators: 150, n_jobs: 1}
+    grid:
+      max_depth: [12, 20]
+      max_features: [sqrt, 0.5]
+      min_samples_leaf: [1, 5]
+  gradient_boosting:
+    params: {max_iter: 300}
+    grid:
+      learning_rate: [0.05, 0.1]
+      max_leaf_nodes: [15, 31, 63]
