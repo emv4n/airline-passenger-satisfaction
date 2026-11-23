@@ -1,7 +1,7 @@
 # Airline Passenger Satisfaction
 
 Integrated Machine Learning project (UIR, 2026/2027), subject 12, group Argmax:
-Imrane Moatadid, Houssam Jabar, Abderafie Jaafari. Supervisor: Anass Knari.
+Imrane Moatadid, Houssam Jabar, Abderrafie Jaafari. Supervisor: Anas Knari.
 
 **Task.** Binary classification: predict whether an airline passenger is *satisfied* or
 *neutral or dissatisfied* from their profile, their trip and their ratings of 14 services,
