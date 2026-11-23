@@ -13,10 +13,13 @@ and explain which services and characteristics drive satisfaction.
 ## Installation
 
 ```bash
-python -m venv .venv
+python -m venv .venv            # Python 3.14 (version used for the saved model)
 .venv\Scripts\activate          # Windows (Linux/macOS: source .venv/bin/activate)
 pip install -r requirements.txt
 ```
+
+The versions are pinned: `models/best_model.pkl` was saved with scikit-learn 1.9.1 and may not load
+with another version.
 
 ## Get the data
 
@@ -30,13 +33,13 @@ This downloads the public Kaggle dataset (no Kaggle account needed) and copies `
 ## Train the models
 
 ```bash
-python main.py                                   # all models (about 15 minutes on 8 cores)
+python main.py                                   # all models (about 10 minutes on 8 cores)
 python main.py --models logistic_regression lda  # only some models
 ```
 
 `main.py` tunes each model of the course (logistic regression, KNN, LDA, QDA, decision tree,
 random forest, gradient boosting) with a grid search in 5-fold stratified cross-validation, evaluates
-the tuned models once on the test set, and saves:
+the tuned models on the test set, and saves:
 
 - `reports/results/model_results.csv`: chosen hyperparameters, cross-validation and test scores;
 - `reports/figures/13_*` to `15_*`: model comparison, ROC curves, confusion matrix of the best model;
@@ -54,7 +57,9 @@ python test.py --input my_passengers.csv    # any CSV with the columns of the Ka
 
 ## Results
 
-Test-set scores of the tuned models (the test file is used once, after selection in cross-validation):
+Test-set scores of the tuned models. No choice depends on the test file: models and hyperparameters are
+selected in cross-validation on the training set. The test file is reused afterwards only to interpret the
+selected model (notebook 02).
 
 | Model | Accuracy | F1 | ROC-AUC |
 |---|---|---|---|
@@ -70,7 +75,8 @@ Main findings:
 
 - Satisfaction is driven first by the **type of trip and loyalty**, then by the **digital experience**
   (online boarding, inflight wifi) and the **on-board services**; delays, gender and gate location barely matter.
-- A rating of 0 means **"not applicable"**: flagging it is the preprocessing step that matters (+3.5 F1 points
+- A rating of 0 is treated as **"not applicable"** (documented by Kaggle for wifi, our assumption for the other
+  services): flagging it is the preprocessing step that matters (+3.5 F1 points
   for logistic regression in the ablation study); the other engineered features change the score by less
   than 0.1 point.
 - Passengers with wifi "not applicable" are 99.7 % satisfied, which looks like a survey artifact: it is the main

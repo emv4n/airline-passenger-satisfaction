@@ -38,7 +38,8 @@ features:
     - cleanliness
 
 feature_engineering:
-  # A rating of 0 means "not applicable" (service not used), not "very bad".
+  # Kaggle documents 0 as "Not Applicable" for the wifi rating only. We assume the same meaning
+  # for the other services, because a 0 does not behave like a very low rating (notebook 01, 3.1).
   # Flags are kept only where the zeros are frequent enough to carry information.
   not_applicable_flags:
     - inflight_wifi_service

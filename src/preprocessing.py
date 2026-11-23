@@ -24,7 +24,7 @@ class FeatureEngineer(BaseEstimator, TransformerMixin):
     Parameters
     ----------
     ratings : list of str
-        The 14 service-rating columns (scale 1-5, where 0 means "not applicable").
+        The 14 service-rating columns (scale 1-5; a 0 is treated as "not applicable").
     not_applicable_flags : list of str
         Rating columns that get a binary "was not applicable" indicator.
     rating_groups : dict of str -> list of str

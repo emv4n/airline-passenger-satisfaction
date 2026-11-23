@@ -82,7 +82,7 @@ def plot_rate_by_bins(X, y, column, bins, figures_dir=None, name=None):
 
 
 def plot_rating_heatmap(X, y, ratings, figures_dir=None):
-    """Satisfaction rate for each rating level (0 = not applicable) of each service."""
+    """Satisfaction rate for each rating level (0 is treated as not applicable) of each service."""
     order = X[ratings].corrwith(y).sort_values(ascending=False).index
     rates = pd.DataFrame({column: y.groupby(X[column]).mean() for column in order}).T
     counts = pd.DataFrame({column: X[column].value_counts() for column in order}).T
@@ -91,7 +91,7 @@ def plot_rating_heatmap(X, y, ratings, figures_dir=None):
     fig, ax = plt.subplots(figsize=(7.5, 6.5))
     sns.heatmap(rates, annot=True, fmt=".0%", cmap="RdBu", center=y.mean(), vmin=0, vmax=1,
                 cbar_kws={"label": "satisfaction rate"}, ax=ax)
-    ax.set(xlabel="rating (0 = not applicable)", ylabel="",
+    ax.set(xlabel="rating (0 = treated as not applicable)", ylabel="",
            title="Satisfaction rate by service rating\n(sorted by correlation with the target)")
     ax.grid(False)
     save_figure(fig, figures_dir, "05_rating_heatmap")

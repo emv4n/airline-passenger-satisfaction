@@ -32,7 +32,7 @@ def main():
 
     results = train_all(X_train, y_train, config, args.models)
 
-    # The test set is used once, after every choice has been made in cross-validation.
+    # No choice depends on the test set: models and hyperparameters are selected in cross-validation.
     table = results_table(results, X_test, y_test)
     results_dir = project_path(config["paths"]["results_dir"])
     results_dir.mkdir(parents=True, exist_ok=True)
