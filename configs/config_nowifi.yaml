@@ -1,0 +1,108 @@
+seed: 42
+paths:
+  raw_dir: data/raw
+  train_file: train.csv
+  test_file: test.csv
+  figures_dir: reports/figures_nowifi
+  results_dir: reports/results_nowifi
+  model_file: models/nowifi_model.pkl
+  model_card: models/nowifi_model_card.json
+  new_samples: data/samples/new_passengers.csv
+dataset:
+  kaggle_handle: teejmahal20/airline-passenger-satisfaction
+  target: satisfaction
+  positive_label: satisfied
+  drop_columns:
+  - unnamed_0
+  - id
+features:
+  categorical:
+  - gender
+  - customer_type
+  - type_of_travel
+  - class
+  numeric:
+  - age
+  - flight_distance
+  - departure_delay_in_minutes
+  - arrival_delay_in_minutes
+  ratings:
+  - inflight_wifi_service
+  - departure_arrival_time_convenient
+  - ease_of_online_booking
+  - gate_location
+  - food_and_drink
+  - online_boarding
+  - seat_comfort
+  - inflight_entertainment
+  - on_board_service
+  - leg_room_service
+  - baggage_handling
+  - checkin_service
+  - inflight_service
+  - cleanliness
+feature_engineering:
+  not_applicable_flags:
+  - departure_arrival_time_convenient
+  - ease_of_online_booking
+  - online_boarding
+  - leg_room_service
+  - food_and_drink
+  rating_representation: raw
+  rating_groups:
+    digital_convenience:
+    - inflight_wifi_service
+    - departure_arrival_time_convenient
+    - ease_of_online_booking
+    - gate_location
+    comfort:
+    - food_and_drink
+    - seat_comfort
+    - inflight_entertainment
+    - cleanliness
+    staff_service:
+    - on_board_service
+    - leg_room_service
+    - baggage_handling
+    - checkin_service
+    - inflight_service
+  age_bins:
+  - 0
+  - 17
+  - 25
+  - 39
+  - 59
+  - 120
+  age_labels:
+  - under_18
+  - '18_25'
+  - '26_39'
+  - '40_59'
+  - 60_plus
+  delay_threshold_minutes: 15
+  steps:
+    not_applicable: true
+    log_transform: true
+    delay_flag: true
+    age_groups: true
+    travel_class: true
+training:
+  cv_folds: 5
+  refit_metric: f1
+  metrics:
+  - accuracy
+  - precision
+  - recall
+  - f1
+  - roc_auc
+  n_jobs: -1
+  knn_search_sample: 20000
+models:
+  gradient_boosting:
+    params:
+      max_iter: 300
+    grid:
+      learning_rate:
+      - 0.05
+      max_leaf_nodes:
+      - 63
