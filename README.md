@@ -88,6 +88,8 @@ Main findings:
   each feature-engineering choice.
 - `notebooks/02_modeling_and_interpretation.ipynb`: ablation study of the feature engineering, model
   comparison, and what drives satisfaction (permutation importance, coefficients, a small tree, errors).
+- `notebooks/03_wifi_pattern.ipynb`: who the passengers with a wifi rating of 0 are, and why their 99.7 %
+  satisfaction looks like a survey artifact.
 
 Open them with `jupyter notebook`. The figures are also saved in `reports/figures/`.
 
