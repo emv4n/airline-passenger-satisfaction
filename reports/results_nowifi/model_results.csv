@@ -1,0 +1,2 @@
+model,best_params,search_seconds,cv_accuracy,cv_precision,cv_recall,cv_f1,cv_roc_auc,test_accuracy,test_precision,test_recall,test_f1,test_roc_auc
+gradient_boosting,"{'learning_rate': 0.05, 'max_leaf_nodes': 63}",49.3,0.9624557131595415,0.973017179963235,0.9394114380899501,0.9559164885662625,0.994677923582941,0.9623498614105328,0.9733042767638246,0.9400157853196527,0.9563704496788008,0.9948421467733841
