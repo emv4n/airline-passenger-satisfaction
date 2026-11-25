@@ -55,6 +55,16 @@ python test.py --input my_passengers.csv    # any CSV with the columns of the Ka
 
 `test.py` only loads `models/best_model.pkl`; it does not need the training data.
 
+## Robustness experiments
+
+```bash
+python main.py --config configs/config_wide.yaml     # wider grids for the tree and the boosting
+python main.py --config configs/config_nowifi.yaml   # selected boosting without the wifi = 0 flag
+```
+
+Their scores are in `reports/results_wide/` and `reports/results_nowifi/`. They write their own models and figures,
+so the selected model is never overwritten.
+
 ## Results
 
 Test-set scores of the tuned models. No choice depends on the test file: models and hyperparameters are
@@ -81,6 +91,8 @@ Main findings:
   than 0.1 point.
 - Passengers with wifi "not applicable" are 99.7 % satisfied, which looks like a survey artifact: it is the main
   limitation of the dataset.
+- Robustness (cross-validation F1 on the training set): wider grids bring nothing (0.9578 with 127 leaves, against
+  0.9577 with 63, so the simpler model is kept), and removing the wifi flag costs 0.0018 (0.9559).
 
 ## Notebooks
 
@@ -100,6 +112,7 @@ Open them with `jupyter notebook`. The figures are also saved in `reports/figure
 | `main.py` | Training entry point |
 | `test.py` | Independent inference on new passengers |
 | `configs/config.yaml` | Paths, column groups, feature-engineering steps, models and search spaces |
+| `configs/config_wide.yaml`, `configs/config_nowifi.yaml` | Robustness experiments |
 | `src/data.py` | Dataset download and loading |
 | `src/preprocessing.py` | Feature engineering and representation pipeline |
 | `src/model.py` | Model definitions and hyperparameter grids |
