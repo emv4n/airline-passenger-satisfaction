@@ -51,5 +51,35 @@ def split_features_target(frame, config):
     return frame.drop(columns=target), y
 
 
+def data_quality_table(config):
+    """Quality checks on the raw train and test files: sizes, duplicates, missing and impossible values.
+
+    Returns a DataFrame with one row per check and one column per file. The checks on identifiers use
+    the raw `id` column, which is dropped before modelling.
+    """
+    files = {name: pd.read_csv(project_path(config["paths"]["raw_dir"]) / config["paths"][f"{name}_file"])
+             for name in ("train", "test")}
+    shared_ids = len(set(files["train"]["id"]) & set(files["test"]["id"]))
+    ratings, numeric = config["features"]["ratings"], config["features"]["numeric"]
+    table = {}
+    for name, raw in files.items():
+        features, y = split_features_target(clean_columns(raw, config), config)
+        table[name] = {
+            "passengers (rows)": len(features),
+            "features": features.shape[1],
+            "satisfied passengers": int(y.sum()),
+            "duplicated passenger ids": int(raw["id"].duplicated().sum()),
+            "duplicated rows (same features)": int(features.duplicated().sum()),
+            "passengers present in both files": shared_ids,
+            "missing values": int(features.isna().sum().sum()),
+            "missing values outside the arrival delay":
+                int(features.drop(columns="arrival_delay_in_minutes").isna().sum().sum()),
+            "ratings outside 0-5": int(((features[ratings] < 0) | (features[ratings] > 5)).sum().sum()),
+            "negative ages, distances or delays": int((features[numeric] < 0).sum().sum()),
+            "ratings equal to 0": int((features[ratings] == 0).sum().sum()),
+        }
+    return pd.DataFrame(table)
+
+
 if __name__ == "__main__":
     print("Dataset copied to", download_dataset(load_config()))

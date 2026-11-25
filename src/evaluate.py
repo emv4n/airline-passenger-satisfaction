@@ -1,13 +1,14 @@
 """Evaluation: test-set metrics, comparison figures and permutation importance."""
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import seaborn as sns
 from sklearn.inspection import permutation_importance
 from sklearn.metrics import (ConfusionMatrixDisplay, RocCurveDisplay, accuracy_score, f1_score,
                              precision_score, recall_score, roc_auc_score)
 
-from src.visualization import TARGET_NAMES, save_figure
+from src.visualization import SPLIT_COLORS, TARGET_NAMES, save_figure
 
 
 def classification_metrics(model, X, y):
@@ -47,6 +48,39 @@ def plot_model_comparison(table, metric, figures_dir=None):
     ax.set(xlim=(max(0, low - 0.05), 1.0), xlabel=metric, ylabel="", title=f"Model comparison ({metric})")
     ax.legend(loc="lower right", fontsize=8)
     save_figure(fig, figures_dir, f"13_model_comparison_{metric}")
+    return fig
+
+
+def summarize_folds(folds, table, metric):
+    """Mean train and validation scores, overfitting gap, fold-to-fold deviation and test score of each model."""
+    grouped = folds.groupby("model")
+    summary = pd.DataFrame({
+        "train": grouped[f"train_{metric}"].mean(),
+        "validation": grouped[f"validation_{metric}"].mean(),
+        "validation std": grouped[f"validation_{metric}"].std(),
+        "test": table[f"test_{metric}"],
+        "fit seconds": grouped["fit_seconds"].mean(),
+    })
+    summary.insert(3, "train - validation", summary["train"] - summary["validation"])
+    return summary.sort_values("validation", ascending=False)
+
+
+def plot_train_validation_test(summary, metric, figures_dir=None):
+    """Train, validation and test score of each model on one line: the line length is the overfitting gap."""
+    ordered = summary.sort_values("validation")
+    rows = np.arange(len(ordered))
+    fig, ax = plt.subplots(figsize=(8, 0.6 * len(ordered) + 1.6))
+    ax.hlines(rows, ordered["validation"], ordered["train"], color="#c3c9d0", linewidth=2, zorder=1)
+    # Small vertical shifts keep the three markers visible when the scores are almost equal.
+    for name, marker, shift in (("train", "o", 0.2), ("validation", "s", 0), ("test", "D", -0.2)):
+        ax.scatter(ordered[name], rows + shift, s=60, marker=marker, color=SPLIT_COLORS[name], edgecolor="white",
+                   linewidth=1.2, label=name, zorder=3)
+    ax.set_yticks(rows, [name.replace("_", " ") for name in ordered.index])
+    label = metric.replace("_", " ").upper()
+    ax.set(xlabel=f"{label} score", title=f"Train, validation and test {label} of each model")
+    ax.legend(loc="lower right")
+    sns.despine(ax=ax)
+    save_figure(fig, figures_dir, "24_train_validation_test")
     return fig
 
 

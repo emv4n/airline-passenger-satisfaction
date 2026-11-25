@@ -4,9 +4,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from matplotlib.ticker import PercentFormatter
 
 TARGET_COLORS = {0: "#9aa5b1", 1: "#2a7ab0"}
 TARGET_NAMES = {0: "neutral or dissatisfied", 1: "satisfied"}
+# Same color for the same part of the data in every figure.
+SPLIT_COLORS = {"train": "#2a7ab0", "validation": "#e0872b", "test": "#a3315f"}
 
 sns.set_theme(style="whitegrid", context="notebook")
 
@@ -31,6 +34,87 @@ def plot_target_balance(y_train, y_test, figures_dir=None):
     ax.set(xlabel="share of passengers", xlim=(0, 1), title="Target balance")
     ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.3), ncol=2, frameon=False)
     save_figure(fig, figures_dir, "01_target_balance")
+    return fig
+
+
+def plot_sample_composition(X_train, X_test, columns, figures_dir=None):
+    """Share and number of passengers of each category, in the train and test files."""
+    n_levels = [X_train[column].nunique() for column in columns]
+    fig, axes = plt.subplots(1, len(columns), figsize=(1.05 * sum(n_levels), 4.8), sharey=True,
+                             gridspec_kw={"width_ratios": n_levels})
+    for ax, column in zip(axes, columns):
+        levels = X_train[column].value_counts().index
+        for shift, (name, frame) in zip((-0.2, 0.2), (("train", X_train), ("test", X_test))):
+            counts = frame[column].value_counts().reindex(levels)
+            shares = counts / counts.sum()
+            bars = ax.bar(np.arange(len(levels)) + shift, shares, 0.36, color=SPLIT_COLORS[name], label=name)
+            ax.bar_label(bars, labels=[f"{count:,} ({share:.1%})" for share, count in zip(shares, counts)],
+                         fontsize=10, padding=4, rotation=90)
+        ax.set_xticks(np.arange(len(levels)), [str(level).replace(" ", "\n") for level in levels], fontsize=10)
+        # The space above 100 % is for the labels of the bars.
+        ax.set(title=column.replace("_", " "), ylim=(0, 1.35), yticks=np.arange(0, 1.01, 0.2))
+        ax.yaxis.set_major_formatter(PercentFormatter(1))
+        ax.grid(axis="x", visible=False)
+    axes[0].set_ylabel("share of the file")
+    axes[0].legend(loc="upper left", fontsize=10)
+    fig.suptitle(f"Who is in the sample: {len(X_train):,} train and {len(X_test):,} test passengers")
+    fig.tight_layout()
+    save_figure(fig, figures_dir, "20_sample_composition")
+    return fig
+
+
+def plot_split_scheme(n_train, n_test, n_folds, figures_dir=None):
+    """Diagram of the train / test split and of the cross-validation folds (bar lengths are to scale)."""
+    total = n_train + n_test
+    fold = n_train / n_folds
+    top = n_folds + 0.6
+    fig, ax = plt.subplots(figsize=(10, 4.6))
+    for left, width, name in ((0, n_train, "train"), (n_train, n_test, "test")):
+        ax.barh(top, width, left=left, height=0.9, color=SPLIT_COLORS[name], edgecolor="white", linewidth=2)
+        ax.text(left + width / 2, top, f"{name}\n{width:,} ({width / total:.0%})", ha="center", va="center",
+                color="white", fontsize=10, fontweight="bold")
+    for row in range(n_folds):
+        height = n_folds - 1 - row
+        for block in range(n_folds):
+            validation = block == row
+            ax.barh(height, fold, left=block * fold, height=0.7, edgecolor="white", linewidth=2,
+                    color=SPLIT_COLORS["validation" if validation else "train"], alpha=1 if validation else 0.35)
+        ax.text((row + 0.5) * fold, height, "validation", ha="center", va="center", fontsize=9, color="black")
+        ax.text(-0.01 * total, height, f"fold {row + 1}", ha="right", va="center", fontsize=10)
+    ax.text(n_train + n_test / 2, (n_folds - 1) / 2, "kept aside,\nno choice\ndepends on it",
+            ha="center", va="center", fontsize=10)
+    ax.text(-0.01 * total, top, "files", ha="right", va="center", fontsize=10)
+    ax.set(xlim=(-0.08 * total, 1.01 * total), ylim=(-0.6, top + 0.6),
+           title=f"Train / test split and {n_folds}-fold stratified cross-validation")
+    ax.axis("off")
+    save_figure(fig, figures_dir, "21_split_scheme")
+    return fig
+
+
+def plot_zero_ratings(X, ratings, figures_dir=None):
+    """Number and share of 0 ratings for each service."""
+    counts = (X[ratings] == 0).sum().sort_values()
+    fig, ax = plt.subplots(figsize=(7.5, 4.8))
+    bars = ax.barh(counts.index, counts, color=TARGET_COLORS[1], height=0.6)
+    labels = [f"{count:,} ({count / len(X):.1%})" if count / len(X) >= 0.0005 else f"{count:,}" for count in counts]
+    ax.bar_label(bars, labels=labels, fontsize=9, padding=3)
+    ax.set(xlabel="number of train passengers", xlim=(0, counts.max() * 1.25), title="Ratings equal to 0, by service")
+    ax.grid(axis="y", visible=False)
+    sns.despine(ax=ax)
+    save_figure(fig, figures_dir, "22_zero_ratings")
+    return fig
+
+
+def plot_scaling(raw, scaled, figures_dir=None):
+    """Box plots of the same columns before and after the log and the standardisation."""
+    fig, axes = plt.subplots(1, 2, figsize=(11, 3.8))
+    for ax, frame, title in zip(axes, (raw, scaled), ("raw values", "after log and standardisation")):
+        sns.boxplot(data=frame, orient="h", ax=ax, color="#8fbbd9", fliersize=1.5, linewidth=1)
+        ax.set(title=title, xlabel="", ylabel="")
+    axes[1].axvline(0, color="black", linewidth=1)
+    axes[1].set_yticklabels([])
+    fig.tight_layout()
+    save_figure(fig, figures_dir, "23_scaling")
     return fig
 
 

@@ -30,6 +30,27 @@ python -m src.data
 This downloads the public Kaggle dataset (no Kaggle account needed) and copies `train.csv` and
 `test.csv` into `data/raw/`.
 
+## Data and split
+
+| | Train | Test |
+|---|---|---|
+| Passengers | 103,904 (80 %) | 25,976 (20 %) |
+| Women / men | 52,727 / 51,177 | 13,172 / 12,804 |
+| Satisfied | 45,025 (43.3 %) | 11,403 (43.9 %) |
+| Duplicated passengers or rows | 0 | 0 |
+| Missing values (arrival delay only) | 310 | 83 |
+| Ratings equal to 0 | 15,932 | 4,202 |
+
+- The train / test split is the one provided with the dataset; no passenger is in both files.
+- There is no fixed validation file: models and hyperparameters are compared in **5-fold stratified cross-validation**
+  on the train file (83,123 passengers to train, 20,781 to validate, five times). The preprocessing is learned on the
+  training folds only.
+- `data/raw/` is not versioned: the command above downloads both files.
+
+![Composition of the train and test files](reports/figures/20_sample_composition.png)
+
+![Train / test split and cross-validation](reports/figures/21_split_scheme.png)
+
 ## Train the models
 
 ```bash
@@ -67,19 +88,22 @@ so the selected model is never overwritten.
 
 ## Results
 
-Test-set scores of the tuned models. No choice depends on the test file: models and hyperparameters are
+Scores of the tuned models. No choice depends on the test file: models and hyperparameters are
 selected in cross-validation on the training set. The test file is reused afterwards only to interpret the
 selected model (notebook 02).
 
-| Model | Accuracy | F1 | ROC-AUC |
-|---|---|---|---|
-| **Gradient boosting (selected)** | **0.964** | **0.958** | **0.995** |
-| Random forest | 0.963 | 0.957 | 0.994 |
-| Decision tree | 0.950 | 0.943 | 0.971 |
-| KNN | 0.935 | 0.925 | 0.981 |
-| Logistic regression | 0.903 | 0.890 | 0.966 |
-| LDA | 0.899 | 0.885 | 0.963 |
-| QDA | 0.887 | 0.868 | 0.954 |
+| Model | Train F1 | Validation F1 (± std of the 5 folds) | Test F1 | Test accuracy | Test ROC-AUC |
+|---|---|---|---|---|---|
+| **Gradient boosting (selected)** | 0.967 | **0.9577** ± 0.0013 | 0.958 | 0.964 | 0.995 |
+| Random forest | 0.994 | 0.9554 ± 0.0020 | 0.957 | 0.963 | 0.994 |
+| Decision tree | 0.969 | 0.9409 ± 0.0017 | 0.943 | 0.950 | 0.971 |
+| KNN | 1.000 | 0.9215 ± 0.0024 | 0.925 | 0.935 | 0.981 |
+| Logistic regression | 0.890 | 0.8897 ± 0.0037 | 0.890 | 0.903 | 0.966 |
+| LDA | 0.886 | 0.8856 ± 0.0042 | 0.885 | 0.899 | 0.963 |
+| QDA | 0.871 | 0.8703 ± 0.0036 | 0.868 | 0.887 | 0.954 |
+
+Why gradient boosting: it has the best validation F1, it beats the random forest on each of the five folds (by 0.0023 on
+average), and its train score is only 0.010 above its validation score, against 0.039 for the forest.
 
 Main findings:
 
@@ -89,6 +113,8 @@ Main findings:
   services): flagging it is the preprocessing step that matters (+3.5 F1 points
   for logistic regression in the ablation study); the other engineered features change the score by less
   than 0.1 point.
+- Standardisation only matters for KNN (F1 0.866 without scaling, 0.904 with min-max, 0.909 with standardisation, on a
+  sample of 20,000 passengers).
 - Passengers with wifi "not applicable" are 99.7 % satisfied, which looks like a survey artifact: it is the main
   limitation of the dataset.
 - Robustness (cross-validation F1 on the training set): wider grids bring nothing (0.9578 with 127 leaves, against
@@ -96,10 +122,10 @@ Main findings:
 
 ## Notebooks
 
-- `notebooks/01_eda_feature_engineering.ipynb`: the data explained with figures, and the justification of
-  each feature-engineering choice.
-- `notebooks/02_modeling_and_interpretation.ipynb`: ablation study of the feature engineering, model
-  comparison, and what drives satisfaction (permutation importance, coefficients, a small tree, errors).
+- `notebooks/01_eda_feature_engineering.ipynb`: sample, data quality, train / validation / test split, exploration
+  with figures, and the justification of each feature-engineering choice.
+- `notebooks/02_modeling_and_interpretation.ipynb`: ablation study, comparison of scalings, train / validation / test
+  scores, choice of the model, and interpretation (permutation importance, coefficients, a small tree, errors).
 - `notebooks/03_wifi_pattern.ipynb`: who the passengers with a wifi rating of 0 are, and why their 99.7 %
   satisfaction looks like a survey artifact.
 

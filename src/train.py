@@ -2,6 +2,7 @@
 
 import time
 
+import pandas as pd
 from sklearn.model_selection import GridSearchCV, StratifiedKFold, cross_validate, train_test_split
 
 from src.model import build_model, param_grid
@@ -48,6 +49,27 @@ def tune_model(name, X, y, config):
         "cv_scores": cv_scores,
         "seconds": time.perf_counter() - start,
     }
+
+
+def fold_scores(name, params, X, y, config):
+    """Train and validation scores of one model on each cross-validation fold, with given hyperparameters.
+
+    The gap between the two shows how much the model overfits; the spread of the validation scores shows
+    whether a difference between two models is larger than the fold-to-fold noise.
+    Returns a DataFrame with one row per fold.
+    """
+    settings = config["training"]
+    metric = settings["refit_metric"]
+    model = build_model(name, config).set_params(**{f"model__{key}": value for key, value in params.items()})
+    scores = cross_validate(model, X, y, cv=cross_validation(config), scoring=[metric],
+                            return_train_score=True, n_jobs=settings["n_jobs"])
+    return pd.DataFrame({
+        "model": name,
+        "fold": range(1, settings["cv_folds"] + 1),
+        f"train_{metric}": scores[f"train_{metric}"],
+        f"validation_{metric}": scores[f"test_{metric}"],
+        "fit_seconds": scores["fit_time"],
+    })
 
 
 def train_all(X, y, config, names=None):
